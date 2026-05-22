@@ -16,17 +16,17 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
     },
     "./app-bridge-react": {
       "types": "./dist/app-bridge-react.d.ts",
-      "import": "./dist/app-bridge-react.js",
+      "import": "./dist/app-bridge-react.mjs",
       "require": "./dist/app-bridge-react.cjs"
     },
     "./vite": {
       "types": "./dist/vite.d.ts",
-      "import": "./dist/vite.js",
+      "import": "./dist/vite.mjs",
       "require": "./dist/vite.cjs"
     },
     "./style.css": "./dist/style.css"
@@ -52,10 +52,14 @@
     "react": ">=18.0.0"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "changelogen": "latest",
-    "typescript": "latest",
-    "vite": "latest"
-  }
+    "@types/node": "^25.9.1",
+    "@types/react": "^18.2.37",
+    "changelogen": "^0.6.2",
+    "path": "^0.12.7",
+    "typescript": "^6.0.3",
+    "unplugin-dts": "^1.0.1",
+    "url": "^0.11.4",
+    "vite": "^^8.0.8"
+  },
+  "dependencies": {}
 }

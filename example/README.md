@@ -5,22 +5,22 @@ A minimal Vite + React app that demonstrates zero-client-code Shopify App Bridge
 The example app imports from Shopify normally:
 
 ```js
-import { useAppBridge } from '@shopify/app-bridge-react'
+import { useAppBridge } from "@shopify/app-bridge-react";
 ```
 
 The only debugger integration is in `vite.config.js`:
 
 ```js
-import { shopifyDebugger } from '@yan-ad/shopify-debugger/vite'
+import { shopifyDebugger } from "shopify-debugger/vite";
 
 export default defineConfig({
   plugins: [
     react(),
     shopifyDebugger({
-      appUrl: '/?shop=debug-store.myshopify.com&embedded=1',
+      appUrl: "/?shop=debug-store.myshopify.com&embedded=1",
     }),
   ],
-})
+});
 ```
 
 ## Run

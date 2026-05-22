@@ -5,13 +5,13 @@ Local debugger and shim for Shopify Polaris App Bridge APIs.
 This package lets a Shopify embedded app keep calling the normal App Bridge API during local development:
 
 ```ts
-import { useAppBridge } from '@shopify/app-bridge-react'
+import { useAppBridge } from "@shopify/app-bridge-react";
 
-const shopify = useAppBridge()
+const shopify = useAppBridge();
 
-shopify.modal.show('delete-modal')
-shopify.toast.show('Saved')
-const products = await shopify.resourcePicker({ type: 'product' })
+shopify.modal.show("delete-modal");
+shopify.toast.show("Saved");
+const products = await shopify.resourcePicker({ type: "product" });
 ```
 
 When debugger mode is enabled, `@shopify/app-bridge-react` is aliased to this package's local shim. Your app code does not need to change.
@@ -19,23 +19,20 @@ When debugger mode is enabled, `@shopify/app-bridge-react` is aliased to this pa
 ## Install
 
 ```bash
-bun add -d @yan-ad/shopify-debugger
+bun add -d shopify-debugger
 ```
 
 ## Vite setup
 
 ```ts
 // vite.config.ts
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { shopifyDebugger } from '@yan-ad/shopify-debugger/vite'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { shopifyDebugger } from "shopify-debugger/vite";
 
 export default defineConfig({
-  plugins: [
-    react(),
-    shopifyDebugger(),
-  ],
-})
+  plugins: [react(), shopifyDebugger()],
+});
 ```
 
 Run local dev with debugger mode:
@@ -58,9 +55,9 @@ You can customize the route or the iframe URL:
 
 ```ts
 shopifyDebugger({
-  debuggerRoute: '/_debugger',
-  appUrl: '/?shop=debug-store.myshopify.com&embedded=1',
-})
+  debuggerRoute: "/_debugger",
+  appUrl: "/?shop=debug-store.myshopify.com&embedded=1",
+});
 ```
 
 Set `debuggerRoute: false` to disable the route while keeping the App Bridge alias.
@@ -145,15 +142,15 @@ A small CSS fallback is included for `ui-modal[data-shopify-debugger-open="true"
 ## Programmatic control
 
 ```ts
-import { shopifyDebugger } from '@yan-ad/shopify-debugger'
+import { shopifyDebugger } from "shopify-debugger";
 
-shopifyDebugger.__debug.setResourcePickerMode('cancel')
+shopifyDebugger.__debug.setResourcePickerMode("cancel");
 shopifyDebugger.__debug.setResourcePickerResponse([
   {
-    id: 'gid://shopify/Product/123',
-    title: 'Custom debug product',
+    id: "gid://shopify/Product/123",
+    title: "Custom debug product",
   },
-])
+]);
 ```
 
 ## Important caveat
