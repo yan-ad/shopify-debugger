@@ -1,0 +1,130 @@
+:root {
+  color: #202223;
+  background: #f6f6f7;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  display: grid;
+  gap: 18px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 42px 20px;
+}
+
+.hero,
+.card {
+  border: 1px solid #d1d5db;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+  padding: 24px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 12px;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1;
+}
+
+h2 {
+  margin-bottom: 14px;
+}
+
+p {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+code {
+  border-radius: 6px;
+  background: #f3f4f6;
+  padding: 2px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  border: 1px solid #c7c7c7;
+  border-radius: 10px;
+  background: #303030;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  padding: 10px 14px;
+}
+
+button:hover {
+  background: #111827;
+}
+
+pre {
+  overflow: auto;
+  border-radius: 12px;
+  background: #111827;
+  color: #d1fae5;
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+.error {
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 10px 12px;
+}
+
+ui-modal {
+  display: none;
+}
+
+ui-modal[data-shopify-debugger-open="true"] {
+  display: block;
+  position: fixed;
+  inset: 20vh max(18px, calc((100vw - 520px) / 2)) auto;
+  z-index: 50;
+  border: 1px solid #d1d5db;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  padding: 24px;
+}
+
+.modal-content p {
+  margin-bottom: 18px;
+}

@@ -1,0 +1,21 @@
+{
+  "name": "shopify-debugger-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "SHOPIFY_DEBUGGER=true vite --host 127.0.0.1",
+    "dev:plain": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@shopify/app-bridge-react": "latest",
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "@yan-ad/shopify-debugger": "file:.."
+  },
+  "devDependencies": {}
+}

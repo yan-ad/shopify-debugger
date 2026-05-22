@@ -71,6 +71,24 @@ You do not need to add a debug panel to the client app. The primary flow is zero
 
 The exported `<ShopifyDebuggerPanel />` still exists as an optional escape hatch for apps that cannot use the iframe shell route.
 
+## Example
+
+This repo includes a runnable example app:
+
+```bash
+cd example
+bun install
+bun run dev
+```
+
+Then open:
+
+```txt
+http://127.0.0.1:5173/_debugger
+```
+
+The example imports `useAppBridge` from `@shopify/app-bridge-react` normally. Only its Vite config uses `shopifyDebugger()`.
+
 ## What is supported?
 
 Initial shim support:
