@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project uses [changelogen](https://github.com/unjs/changelogen) for release notes.
 
+## v0.1.2
+
+[compare changes](https://github.com/yan-ad/shopify-debugger/compare/v0.1.1...v0.1.2)
+
+### 🏡 Chore
+
+- Update dependencies and refactor code for Shopify Debugger ([ea742b3](https://github.com/yan-ad/shopify-debugger/commit/ea742b3))
+
+### ❤️ Contributors
+
+- Yan-ad ([@ngalor](https://github.com/ngalor))
+
 ## v0.1.1
 
 
