@@ -28,6 +28,12 @@ export type ShopifyDebuggerState = {
   }
 }
 
+type ParentCommand = {
+  source?: string
+  command?: string
+  payload?: unknown
+}
+
 export type ShopifyDebuggerBridge = ReturnType<typeof createShopifyDebuggerBridge>
 
 let eventSequence = 0
@@ -63,6 +69,31 @@ const defaultProduct = {
   ],
 }
 
+function serializeState(state: ShopifyDebuggerState) {
+  return {
+    ...state,
+    events: [...state.events],
+    activeModals: [...state.activeModals],
+    visibleSaveBars: [...state.visibleSaveBars],
+    pendingResourcePicker: state.pendingResourcePicker
+      ? {
+          requestId: state.pendingResourcePicker.requestId,
+          options: state.pendingResourcePicker.options,
+        }
+      : undefined,
+  }
+}
+
+function postToParent(type: string, payload?: unknown) {
+  if (typeof window === 'undefined' || window.parent === window) return
+
+  window.parent.postMessage({
+    source: 'shopify-debugger-client',
+    type,
+    payload,
+  }, '*')
+}
+
 export function createShopifyDebuggerBridge() {
   const listeners = new Set<(event: ShopifyDebuggerEvent, state: ShopifyDebuggerState) => void>()
 
@@ -85,9 +116,16 @@ export function createShopifyDebuggerBridge() {
   }
 
   function notify(event: ShopifyDebuggerEvent) {
+    const nextSnapshot = snapshot()
+
     for (const listener of listeners) {
-      listener(event, snapshot())
+      listener(event, nextSnapshot)
     }
+
+    postToParent('event', {
+      event,
+      state: serializeState(nextSnapshot),
+    })
   }
 
   function emit(type: string, payload?: unknown) {
@@ -132,6 +170,33 @@ export function createShopifyDebuggerBridge() {
     emit('resourcePicker.reject', { requestId: pending.requestId, message })
     pending.reject(error)
     return true
+  }
+
+  function handleParentCommand(command: ParentCommand) {
+    if (command.source !== 'shopify-debugger-shell') return
+
+    switch (command.command) {
+      case 'getState':
+        postToParent('state', serializeState(snapshot()))
+        return
+      case 'clearEvents':
+        bridge.__debug.clearEvents()
+        return
+      case 'setResourcePickerMode':
+        bridge.__debug.setResourcePickerMode(command.payload as ResourcePickerMode)
+        return
+      case 'setResourcePickerResponse':
+        bridge.__debug.setResourcePickerResponse(command.payload as ResourcePickerResponse)
+        return
+      case 'resolveResourcePicker':
+        bridge.__debug.resolveResourcePicker(command.payload as ResourcePickerResponse)
+        return
+      case 'rejectResourcePicker':
+        bridge.__debug.rejectResourcePicker()
+        return
+      default:
+        emit('debug.unknownParentCommand', command)
+    }
   }
 
   const bridge = {
@@ -239,6 +304,11 @@ export function createShopifyDebuggerBridge() {
       resolveResourcePicker: resolveManualResourcePicker,
       rejectResourcePicker: rejectManualResourcePicker,
     },
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('message', (event) => handleParentCommand(event.data as ParentCommand))
+    queueMicrotask(() => postToParent('ready', serializeState(snapshot())))
   }
 
   return bridge

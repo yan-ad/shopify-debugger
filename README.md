@@ -65,23 +65,11 @@ shopifyDebugger({
 
 Set `debuggerRoute: false` to disable the route while keeping the App Bridge alias.
 
-## Add the debug panel
+## Debug panel
 
-Import the styles once and render the panel in dev:
+You do not need to add a debug panel to the client app. The primary flow is zero client-code changes: open `/_debugger` and use the shell panel there.
 
-```tsx
-import '@yan-ad/shopify-debugger/style.css'
-import { ShopifyDebuggerPanel } from '@yan-ad/shopify-debugger'
-
-export function App() {
-  return (
-    <>
-      {/* your app */}
-      {import.meta.env.DEV ? <ShopifyDebuggerPanel /> : null}
-    </>
-  )
-}
-```
+The exported `<ShopifyDebuggerPanel />` still exists as an optional escape hatch for apps that cannot use the iframe shell route.
 
 ## What is supported?
 
@@ -97,7 +85,7 @@ Initial shim support:
 - `shopify.saveBar.show(id)` / `shopify.saveBar.hide(id)`
 - `shopify.navigation.navigate(destination)`
 
-The debugger panel shows a local event timeline and lets you switch resource picker behavior between:
+The `/_debugger` shell shows a local event timeline and lets you switch resource picker behavior between:
 
 - `success`
 - `cancel`
@@ -106,7 +94,7 @@ The debugger panel shows a local event timeline and lets you switch resource pic
 
 ## Manual resource picker flow
 
-When resource picker mode is `manual`, calls to `shopify.resourcePicker(...)` stay pending until you resolve, cancel, or reject them from the panel.
+When resource picker mode is `manual`, calls to `shopify.resourcePicker(...)` stay pending until you resolve, cancel, or reject them from the `/_debugger` shell.
 
 ## Modal fallback
 
