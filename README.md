@@ -46,6 +46,25 @@ SHOPIFY_DEBUGGER=true bun run dev
 
 `SHOPIFY_APP_BRIDGE_DEBUG=true` also works.
 
+When enabled, the Vite plugin also registers a local debugger shell at:
+
+```txt
+http://localhost:5173/_debugger
+```
+
+Open that route to load your app inside a lightweight iframe host. This gives you a local Shopify-like debugging surface without going through `admin.shopify.com`.
+
+You can customize the route or the iframe URL:
+
+```ts
+shopifyDebugger({
+  debuggerRoute: '/_debugger',
+  appUrl: '/?shop=debug-store.myshopify.com&embedded=1',
+})
+```
+
+Set `debuggerRoute: false` to disable the route while keeping the App Bridge alias.
+
 ## Add the debug panel
 
 Import the styles once and render the panel in dev:
