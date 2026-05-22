@@ -1,0 +1,114 @@
+# Shopify Debugger
+
+Local debugger and shim for Shopify Polaris App Bridge APIs.
+
+This package lets a Shopify embedded app keep calling the normal App Bridge API during local development:
+
+```ts
+import { useAppBridge } from '@shopify/app-bridge-react'
+
+const shopify = useAppBridge()
+
+shopify.modal.show('delete-modal')
+shopify.toast.show('Saved')
+const products = await shopify.resourcePicker({ type: 'product' })
+```
+
+When debugger mode is enabled, `@shopify/app-bridge-react` is aliased to this package's local shim. Your app code does not need to change.
+
+## Install
+
+```bash
+bun add -d @yan-ad/shopify-debugger
+```
+
+## Vite setup
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { shopifyDebugger } from '@yan-ad/shopify-debugger/vite'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    shopifyDebugger(),
+  ],
+})
+```
+
+Run local dev with debugger mode:
+
+```bash
+SHOPIFY_DEBUGGER=true bun run dev
+```
+
+`SHOPIFY_APP_BRIDGE_DEBUG=true` also works.
+
+## Add the debug panel
+
+Import the styles once and render the panel in dev:
+
+```tsx
+import '@yan-ad/shopify-debugger/style.css'
+import { ShopifyDebuggerPanel } from '@yan-ad/shopify-debugger'
+
+export function App() {
+  return (
+    <>
+      {/* your app */}
+      {import.meta.env.DEV ? <ShopifyDebuggerPanel /> : null}
+    </>
+  )
+}
+```
+
+## What is supported?
+
+Initial shim support:
+
+- `useAppBridge()` from `@shopify/app-bridge-react`
+- `shopify.modal.show(id)`
+- `shopify.modal.hide(id)`
+- `shopify.modal.toggle(id)`
+- `shopify.toast.show(message, options?)`
+- `shopify.resourcePicker(options)`
+- `shopify.loading.show()` / `shopify.loading.hide()`
+- `shopify.saveBar.show(id)` / `shopify.saveBar.hide(id)`
+- `shopify.navigation.navigate(destination)`
+
+The debugger panel shows a local event timeline and lets you switch resource picker behavior between:
+
+- `success`
+- `cancel`
+- `error`
+- `manual`
+
+## Manual resource picker flow
+
+When resource picker mode is `manual`, calls to `shopify.resourcePicker(...)` stay pending until you resolve, cancel, or reject them from the panel.
+
+## Modal fallback
+
+When `shopify.modal.show('my-modal')` is called, the debugger tries to find `document.getElementById('my-modal')` and adds `open` plus `data-shopify-debugger-open="true"`.
+
+A small CSS fallback is included for `ui-modal[data-shopify-debugger-open="true"]` so App Bridge modal content is visible locally.
+
+## Programmatic control
+
+```ts
+import { shopifyDebugger } from '@yan-ad/shopify-debugger'
+
+shopifyDebugger.__debug.setResourcePickerMode('cancel')
+shopifyDebugger.__debug.setResourcePickerResponse([
+  {
+    id: 'gid://shopify/Product/123',
+    title: 'Custom debug product',
+  },
+])
+```
+
+## Important caveat
+
+This package mimics the public App Bridge API shape for local debugging. It does not emulate Shopify Admin, OAuth, billing, permissions, or the real Admin iframe host protocol.
