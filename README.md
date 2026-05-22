@@ -71,6 +71,28 @@ You do not need to add a debug panel to the client app. The primary flow is zero
 
 The exported `<ShopifyDebuggerPanel />` still exists as an optional escape hatch for apps that cannot use the iframe shell route.
 
+## Release
+
+This package uses [changelogen](https://github.com/unjs/changelogen) for changelog and release automation.
+
+Dry-run release notes:
+
+```bash
+bun run release:dry
+```
+
+Build, update changelog, tag, and push:
+
+```bash
+bun run release
+```
+
+Build, update changelog, tag, push, and publish to npm:
+
+```bash
+bun run release:publish
+```
+
 ## Example
 
 This repo includes a runnable example app:

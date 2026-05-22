@@ -31,6 +31,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
@@ -39,7 +40,10 @@
     "build:types": "tsc --emitDeclarationOnly",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "copy:css": "cp src/style.css dist/style.css"
+    "copy:css": "cp src/style.css dist/style.css",
+    "release": "bun run check && bun run build && changelogen --release --push",
+    "release:dry": "changelogen --dry",
+    "release:publish": "bun run check && bun run build && changelogen --release --push --publish"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
@@ -47,6 +51,7 @@
   "devDependencies": {
     "@types/node": "latest",
     "@types/react": "latest",
+    "changelogen": "latest",
     "esbuild": "latest",
     "typescript": "latest",
     "vite": "latest"
