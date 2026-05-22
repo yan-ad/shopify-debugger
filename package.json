@@ -1,5 +1,5 @@
 {
-  "name": "@yan-ad/shopify-debugger",
+  "name": "shopify-debugger",
   "version": "0.1.0",
   "description": "Local debugger and shim for Shopify Polaris App Bridge APIs.",
   "type": "module",
@@ -16,15 +16,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./app-bridge-react": {
       "types": "./dist/app-bridge-react.d.ts",
-      "import": "./dist/app-bridge-react.js"
+      "import": "./dist/app-bridge-react.js",
+      "require": "./dist/app-bridge-react.cjs"
     },
     "./vite": {
       "types": "./dist/vite.d.ts",
-      "import": "./dist/vite.js"
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
     },
     "./style.css": "./dist/style.css"
   },
@@ -35,8 +38,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun run clean && bun run build:types && bun run build:js && bun run copy:css",
-    "build:js": "esbuild src/index.ts src/app-bridge-react.ts --bundle --format=esm --platform=browser --outdir=dist --external:react --external:react/jsx-runtime && esbuild src/vite.ts --bundle --format=esm --platform=node --outfile=dist/vite.js --external:vite",
+    "build": "bun run clean && bun run build:js && bun run build:types && bun run copy:css",
+    "build:js": "vite build",
     "build:types": "tsc --emitDeclarationOnly",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -52,7 +55,6 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "changelogen": "latest",
-    "esbuild": "latest",
     "typescript": "latest",
     "vite": "latest"
   }

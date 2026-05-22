@@ -8,7 +8,6 @@
         "@types/node": "latest",
         "@types/react": "latest",
         "changelogen": "latest",
-        "esbuild": "latest",
         "typescript": "latest",
         "vite": "latest",
       },
