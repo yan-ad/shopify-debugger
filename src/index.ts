@@ -9,6 +9,7 @@ export type {
   ShopifyDebuggerBridge,
   ShopifyDebuggerEvent,
   ShopifyDebuggerState,
+  ToastOptions,
 } from "./bridge";
 export { ShopifyDebuggerPanel } from "./panel";
 export type { ShopifyDebuggerPanelProps } from "./panel";

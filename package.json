@@ -44,6 +44,9 @@
     "LICENSE"
   ],
   "scripts": {
+    "dev": "concurrently -n shell,playground -c cyan,magenta \"pnpm run dev:shell\" \"pnpm run dev:playground\"",
+    "dev:shell": "vite --config vite.debugger-shell.config.ts",
+    "dev:playground": "pnpm --filter example dev",
     "build": "pnpm run clean && pnpm run build:js && pnpm run build:types && pnpm run copy:css",
     "build:js": "vite build",
     "build:types": "tsc --emitDeclarationOnly",
@@ -64,6 +67,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "changelogen": "^0.6.2",
+    "concurrently": "^9.2.1",
     "path": "^0.12.7",
     "react-dom": "^19.2.6",
     "typescript": "^6.0.3",

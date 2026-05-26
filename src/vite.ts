@@ -134,24 +134,16 @@ export function shopifyDebugger(
     name: "shopify-debugger",
     enforce: "pre",
     config(config) {
-      if (!enabled) return;
+      if (!enabled || !aliasAppBridgeReact) return;
 
-      const result: Record<string, unknown> = {};
-
-      if (debuggerRoute) {
-        result.plugins = [tailwindcss()];
-      }
-
-      if (aliasAppBridgeReact) {
-        result.resolve = {
+      return {
+        resolve: {
           alias: [
             { find: "@shopify/app-bridge-react", replacement: shimPath },
             ...normalizeAlias(config.resolve?.alias),
           ],
-        };
-      }
-
-      return result as import("vite").UserConfig;
+        },
+      };
     },
     configureServer(server) {
       const shellEntryPath = resolveDebuggerShellEntryPath();

@@ -9,6 +9,11 @@ export type ResourcePickerMode = "success" | "cancel" | "error" | "manual";
 
 export type ResourcePickerResponse = unknown[] | undefined;
 
+export type ToastOptions = {
+  isError?: boolean;
+  tone?: "neutral" | "critical";
+};
+
 export type ShopifyDebuggerState = {
   events: ShopifyDebuggerEvent[];
   resourcePickerMode: ResourcePickerMode;
@@ -25,7 +30,7 @@ export type ShopifyDebuggerState = {
   visibleSaveBars: Set<string>;
   lastToast?: {
     message: string;
-    options?: unknown;
+    options?: ToastOptions;
   };
 };
 
@@ -267,7 +272,7 @@ export function createShopifyDebuggerBridge() {
     },
 
     toast: {
-      show(message: string, options?: unknown) {
+      show(message: string, options?: ToastOptions) {
         state.lastToast = { message, options };
         emit("toast.show", { message, options });
       },

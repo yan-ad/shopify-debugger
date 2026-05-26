@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge, Modal, TitleBar } from "@shopify/app-bridge-react";
 import "./style.css";
 
 function App() {
@@ -26,7 +26,7 @@ function App() {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setLastError(message);
-      shopify.toast.show(`Picker error: ${message}`);
+      shopify.toast.show(`Picker error: ${message}`, { isError: true });
     }
   }
 
@@ -42,6 +42,19 @@ function App() {
             shim.
           </s-paragraph>
         </s-section>
+
+        <Modal id="example-modal">
+          <TitleBar title="Example Modal">
+            <button>Close</button>
+            <button variant="primary">Save</button>
+          </TitleBar>
+
+          <div>
+            Content inside the modal. The <code>open</code> attribute of this{" "}
+            <code>ui-modal</code> element is toggled by the debugger shim when
+            you
+          </div>
+        </Modal>
 
         <s-section heading="Actions">
           <s-stack gap="small" direction="inline">
@@ -66,11 +79,14 @@ function App() {
             </s-button>
             <s-button
               type="button"
+              tone="critical"
               onClick={() => {
-                shopify.toast.show("This is a simulated toast message.");
+                shopify.toast.show("This is a simulated error toast message.", {
+                  isError: true,
+                });
               }}
             >
-              Simulate Toast
+              Simulate Error Toast
             </s-button>
             <s-button
               type="button"
@@ -129,6 +145,7 @@ function App() {
                 } catch (error) {
                   shopify.toast.show(
                     `Action failed: ${error instanceof Error ? error.message : error}`,
+                    { isError: true },
                   );
                 }
               }}
@@ -154,6 +171,7 @@ function App() {
                 } catch (error) {
                   shopify.toast.show(
                     `Action failed: ${error instanceof Error ? error.message : error}`,
+                    { isError: true },
                   );
                 }
               }}

@@ -9,6 +9,10 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/debugger-shell.tsx"></script>
+    <script>
+      window.__SHOPIFY_DEBUGGER_INITIAL_APP_URL =
+        "http://127.0.0.1:5173/?shop=debug-store.myshopify.com&embedded=1";
+    </script>
+    <script type="module" src="./main.tsx"></script>
   </body>
 </html>

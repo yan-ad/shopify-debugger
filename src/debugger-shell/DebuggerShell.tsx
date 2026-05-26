@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../style.css";
+import type { ToastOptions } from "../bridge";
 
 declare global {
   interface Window {
@@ -22,6 +23,12 @@ type ShellState = {
   resourcePickerMode?: string;
   pendingResourcePicker?: unknown;
   activeModals?: Array<string | { id?: string; heading?: string }>;
+};
+
+type ShellToast = {
+  id: number;
+  message: string;
+  tone: "neutral" | "critical";
 };
 
 export function DebuggerShell() {
@@ -52,11 +59,14 @@ export function DebuggerShell() {
   );
   const [events, setEvents] = useState<DebuggerEvent[]>([]);
   const [state, setState] = useState<ShellState>({});
+  const [toasts, setToasts] = useState<ShellToast[]>([]);
 
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const shellModalRef = useRef<HTMLElement | null>(null);
   const shellModalTextRef = useRef<HTMLElement | null>(null);
   const suppressShellModalHideEventRef = useRef(false);
+  const toastSequenceRef = useRef(0);
+  const toastTimeoutsRef = useRef(new Map<number, number>());
 
   const currentModal = useMemo(() => {
     const activeModals =
@@ -98,6 +108,33 @@ export function DebuggerShell() {
     return JSON.parse(resourceResponse);
   }
 
+  function dismissToast(id: number) {
+    const timeoutId = toastTimeoutsRef.current.get(id);
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+      toastTimeoutsRef.current.delete(id);
+    }
+
+    setToasts((previousToasts) =>
+      previousToasts.filter((toast) => toast.id !== id),
+    );
+  }
+
+  function showToast(message: string, tone: ShellToast["tone"] = "neutral") {
+    toastSequenceRef.current += 1;
+    const id = toastSequenceRef.current;
+
+    setToasts((previousToasts) =>
+      [...previousToasts, { id, message, tone }].slice(-4),
+    );
+
+    const timeoutId = window.setTimeout(() => {
+      dismissToast(id);
+    }, 3500);
+
+    toastTimeoutsRef.current.set(id, timeoutId);
+  }
+
   function syncState(nextState: ShellState | undefined) {
     if (!nextState) return;
 
@@ -128,6 +165,21 @@ export function DebuggerShell() {
           event?: { type?: string; payload?: unknown };
         };
         syncState(nextPayload?.state);
+        if (nextPayload?.event?.type === "toast.show") {
+          const payload = nextPayload.event.payload as
+            | {
+                message?: unknown;
+                options?: ToastOptions;
+              }
+            | undefined;
+
+          if (typeof payload?.message === "string" && payload.message) {
+            const isCritical =
+              payload?.options?.isError === true ||
+              payload?.options?.tone === "critical";
+            showToast(payload.message, isCritical ? "critical" : "neutral");
+          }
+        }
         push(
           nextPayload?.event?.type || "appBridge.event",
           nextPayload?.event?.payload,
@@ -138,6 +190,15 @@ export function DebuggerShell() {
     window.addEventListener("message", onMessage);
     return () => {
       window.removeEventListener("message", onMessage);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      for (const timeoutId of toastTimeoutsRef.current.values()) {
+        window.clearTimeout(timeoutId);
+      }
+      toastTimeoutsRef.current.clear();
     };
   }, []);
 
@@ -190,44 +251,30 @@ export function DebuggerShell() {
   }, [currentModal.id]);
 
   return (
-    <div
-      style={{
-        fontFamily: "Manrope, sans-serif",
-        height: "100vh",
-        background: "#f8fafc",
-        color: "#111827",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <header className="bg-zinc-900 flex justify-between items-center">
-        <div>
+    <div className="bg-zinc-900 h-screen flex flex-col">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const nextUrl = appUrl || "/";
+          setIframeUrl(nextUrl);
+          setReady(false);
+          push("frame.load", { url: nextUrl });
+        }}
+        className="flex justify-between h-14 items-center gap-1 text-white px-3 py-2.5"
+      >
+        <div className="flex items-center gap-2">
           <strong>Shopify Debugger</strong>
-          <div style={{ color: "#6b7280", marginTop: "2px", fontSize: "12px" }}>
-            Zero-client-code local shell route
-          </div>
+          <s-badge tone={ready ? "success" : "neutral"}>
+            {ready ? "Connected" : "Pending"}
+          </s-badge>
         </div>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const nextUrl = appUrl || "/";
-            setIframeUrl(nextUrl);
-            setReady(false);
-            push("frame.load", { url: nextUrl });
-          }}
-          style={{ display: "flex", gap: "8px" }}
-        >
-          <input
-            aria-label="App URL"
-            value={appUrl}
-            onChange={(e) => setAppUrl(e.target.value)}
-            style={{
-              padding: "9px 11px",
-              border: "1px solid #d8dde3",
-              borderRadius: "10px",
-              width: "min(520px, 46vw)",
-            }}
-          />
+        <input
+          aria-label="App URL"
+          value={appUrl}
+          onChange={(e) => setAppUrl(e.currentTarget.value)}
+          className="grow rounded-xl lg:max-w-160 border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent"
+        />
+        <div>
           <s-button type="submit" variant="primary">
             Load
           </s-button>
@@ -242,90 +289,12 @@ export function DebuggerShell() {
           >
             Refresh
           </s-button>
-        </form>
-      </header>
+        </div>
+      </form>
 
-      <main
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 390px",
-          gap: "16px",
-          padding: "16px",
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        <section
-          style={{
-            border: "1px solid #d8dde3",
-            borderRadius: "14px",
-            background: "#fff",
-            overflow: "hidden",
-            minHeight: 0,
-          }}
-        >
-          <iframe
-            ref={frameRef}
-            src={iframeUrl}
-            title="Debugged Shopify app"
-            onLoad={() => send("getState")}
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "none",
-              minHeight: "100%",
-            }}
-          />
-        </section>
-        <aside
-          style={{
-            border: "1px solid #d8dde3",
-            borderRadius: "14px",
-            background: "#fff",
-            padding: "14px",
-            minWidth: 0,
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-          }}
-        >
-          <h2>App Bridge Debugger</h2>
-          <p style={{ color: "#6b7280", marginTop: "0", fontSize: "12px" }}>
-            Stream events to this shell.
-          </p>
-
+      <main className="grid grow lg:grid-cols-12 rounded-xl overflow-hidden bg-white">
+        <aside className="hidden lg:block lg:col-span-2 p-4 bg-neutral-200/50 h-full overflow-auto">
           <div style={{ display: "grid", gap: "8px", marginBottom: "12px" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                width: "fit-content",
-                borderRadius: "999px",
-                padding: "4px 8px",
-                fontSize: "12px",
-                fontWeight: 650,
-                background: ready ? "#dcfce7" : "#f1f5f9",
-                color: ready ? "#166534" : "#6b7280",
-              }}
-            >
-              {ready ? "iframe connected" : "waiting for iframe"}
-            </span>
-            <span
-              style={{
-                display: "inline-flex",
-                width: "fit-content",
-                borderRadius: "999px",
-                padding: "4px 8px",
-                fontSize: "12px",
-                fontWeight: 650,
-                background: state.pendingResourcePicker ? "#fef3c7" : "#f1f5f9",
-                color: state.pendingResourcePicker ? "#92400e" : "#6b7280",
-              }}
-            >
-              {state.pendingResourcePicker ?
-                "resource picker pending"
-              : "no pending picker"}
-            </span>
-
             <label style={{ fontSize: "12px", fontWeight: 650 }}>
               Resource picker mode
             </label>
@@ -460,6 +429,20 @@ export function DebuggerShell() {
             }
           </div>
         </aside>
+        <section className="lg:col-span-10" style={{ minHeight: 0 }}>
+          <iframe
+            ref={frameRef}
+            src={iframeUrl}
+            title="Debugged Shopify app"
+            onLoad={() => send("getState")}
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "none",
+              minHeight: "100%",
+            }}
+          />
+        </section>
       </main>
 
       <s-modal
@@ -485,6 +468,33 @@ export function DebuggerShell() {
           Close modal
         </s-button>
       </s-modal>
+
+      <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={
+              toast.tone === "critical" ?
+                "pointer-events-auto rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 shadow"
+              : "pointer-events-auto rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow"
+            }
+            role="status"
+            aria-live="polite"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="m-0 leading-5">{toast.message}</p>
+              <button
+                type="button"
+                className="rounded px-1 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                onClick={() => dismissToast(toast.id)}
+                aria-label="Dismiss toast"
+              >
+                x
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
