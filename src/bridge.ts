@@ -14,6 +14,20 @@ export type ToastOptions = {
   tone?: "neutral" | "critical";
 };
 
+export type ModalAction = {
+  actionIndex: number;
+  label: string;
+  variant?: "primary" | "secondary";
+};
+
+export type ModalDescriptor = {
+  id: string;
+  heading?: string;
+  content?: unknown;
+  body?: unknown;
+  actions?: ModalAction[];
+};
+
 export type ShopifyDebuggerState = {
   events: ShopifyDebuggerEvent[];
   resourcePickerMode: ResourcePickerMode;
@@ -24,8 +38,7 @@ export type ShopifyDebuggerState = {
     resolve: (value: ResourcePickerResponse) => void;
     reject: (error: Error) => void;
   };
-  // Now supports Set<string | {id: string, heading?: string}>
-  activeModals: Set<string | { id: string; heading?: string }>;
+  activeModals: Set<string | ModalDescriptor>;
   loading: boolean;
   visibleSaveBars: Set<string>;
   lastToast?: {
@@ -38,6 +51,11 @@ type ParentCommand = {
   source?: string;
   command?: string;
   payload?: unknown;
+};
+
+type TriggerModalActionPayload = {
+  id?: unknown;
+  actionIndex?: unknown;
 };
 
 export type ShopifyDebuggerBridge = ReturnType<
@@ -104,6 +122,98 @@ function postToParent(type: string, payload?: unknown) {
     },
     "*",
   );
+}
+
+function findModalElement(id: string) {
+  if (typeof document === "undefined") return undefined;
+
+  const element = document.getElementById(id);
+  if (!element) return undefined;
+
+  return element as HTMLElement;
+}
+
+function collectModalActions(modalElement: HTMLElement) {
+  const actions: ModalAction[] = [];
+  const buttonElements = modalElement.querySelectorAll(
+    "[slot='titleBar'] button, [slot='titleBar'] s-button, [data-shopify-debugger-title-bar='true'] button, [data-shopify-debugger-title-bar='true'] s-button",
+  );
+
+  buttonElements.forEach((element, actionIndex) => {
+    const label = element.textContent?.trim() || `Action ${actionIndex + 1}`;
+    const variant =
+      element.getAttribute("variant") === "primary" ? "primary" : "secondary";
+    actions.push({ actionIndex, label, variant });
+  });
+
+  return actions;
+}
+
+function extractModalDescriptor(
+  arg: string | ModalDescriptor,
+): ModalDescriptor {
+  const base =
+    typeof arg === "string" ? ({ id: arg } satisfies ModalDescriptor) : arg;
+  const modalElement = findModalElement(base.id);
+  if (!modalElement) {
+    return {
+      ...base,
+      content: base.content ?? base.body,
+    };
+  }
+
+  const titleBar =
+    modalElement.querySelector("[slot='titleBar']") ||
+    modalElement.querySelector("[data-shopify-debugger-title-bar='true']");
+
+  const heading =
+    base.heading ||
+    modalElement.getAttribute("heading") ||
+    titleBar?.querySelector("strong")?.textContent?.trim() ||
+    base.id;
+
+  const contentFromPayload = base.content ?? base.body;
+  const content =
+    contentFromPayload ??
+    (() => {
+      const bodyHost = modalElement.cloneNode(true) as HTMLElement;
+      bodyHost
+        .querySelectorAll(
+          "[slot='titleBar'], [data-shopify-debugger-title-bar='true']",
+        )
+        .forEach((element) => element.remove());
+
+      return bodyHost.textContent?.trim() || undefined;
+    })();
+
+  return {
+    ...base,
+    heading,
+    content,
+    actions: collectModalActions(modalElement),
+  };
+}
+
+function triggerModalAction(payload: TriggerModalActionPayload) {
+  const id = typeof payload.id === "string" ? payload.id : "";
+  const actionIndex =
+    typeof payload.actionIndex === "number" ? payload.actionIndex : -1;
+  if (!id || actionIndex < 0) return false;
+
+  const modalElement = findModalElement(id);
+  if (!modalElement) return false;
+
+  const buttonElements = modalElement.querySelectorAll(
+    "[slot='titleBar'] button, [slot='titleBar'] s-button, [data-shopify-debugger-title-bar='true'] button, [data-shopify-debugger-title-bar='true'] s-button",
+  );
+
+  const actionElement = buttonElements.item(actionIndex) as
+    | HTMLElement
+    | undefined;
+
+  if (!actionElement) return false;
+  actionElement.click();
+  return true;
 }
 
 export function createShopifyDebuggerBridge() {
@@ -204,13 +314,35 @@ export function createShopifyDebuggerBridge() {
       case "showModal":
         if (typeof command.payload === "string" && command.payload) {
           bridge.modal.show(command.payload);
+        } else if (
+          typeof command.payload === "object" &&
+          command.payload &&
+          typeof (command.payload as { id?: unknown }).id === "string"
+        ) {
+          bridge.modal.show(command.payload as ModalDescriptor);
         }
         return;
       case "hideModal":
         if (typeof command.payload === "string" && command.payload) {
           bridge.modal.hide(command.payload);
+        } else if (
+          typeof command.payload === "object" &&
+          command.payload &&
+          typeof (command.payload as { id?: unknown }).id === "string"
+        ) {
+          bridge.modal.hide(command.payload as { id: string });
         }
         return;
+      case "triggerModalAction": {
+        const payload = (command.payload || {}) as TriggerModalActionPayload;
+        const ok = triggerModalAction(payload);
+        emit("modal.action.trigger", {
+          id: payload.id,
+          actionIndex: payload.actionIndex,
+          ok,
+        });
+        return;
+      }
       default:
         emit("debug.unknownParentCommand", command);
     }
@@ -218,13 +350,8 @@ export function createShopifyDebuggerBridge() {
 
   const bridge = {
     modal: {
-      show(arg: string | { id: string; heading?: string }) {
-        let modalObj: { id: string; heading?: string };
-        if (typeof arg === "string") {
-          modalObj = { id: arg };
-        } else {
-          modalObj = arg;
-        }
+      show(arg: string | ModalDescriptor) {
+        const modalObj = extractModalDescriptor(arg);
         // Remove any existing modal with same id (as string or object)
         state.activeModals.forEach((m) => {
           if (
@@ -240,7 +367,7 @@ export function createShopifyDebuggerBridge() {
       hide(arg: string | { id: string }) {
         let id = typeof arg === "string" ? arg : arg.id;
         // Collect all modals to remove (avoid mutating during iteration)
-        const toRemove: Array<string | { id: string; heading?: string }> = [];
+        const toRemove: Array<string | ModalDescriptor> = [];
         state.activeModals.forEach((m) => {
           if (
             (typeof m === "string" && m === id) ||
@@ -252,7 +379,7 @@ export function createShopifyDebuggerBridge() {
         toRemove.forEach((m) => state.activeModals.delete(m));
         emit("modal.hide", { id });
       },
-      toggle(arg: string | { id: string; heading?: string }) {
+      toggle(arg: string | ModalDescriptor) {
         let id = typeof arg === "string" ? arg : arg.id;
         let exists = false;
         state.activeModals.forEach((m) => {

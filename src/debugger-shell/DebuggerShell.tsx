@@ -22,7 +22,20 @@ type DebuggerEvent = {
 type ShellState = {
   resourcePickerMode?: string;
   pendingResourcePicker?: unknown;
-  activeModals?: Array<string | { id?: string; heading?: string }>;
+  activeModals?: Array<
+    | string
+    | {
+        id?: string;
+        heading?: string;
+        content?: unknown;
+        body?: unknown;
+        actions?: Array<{
+          actionIndex?: number;
+          label?: string;
+          variant?: "primary" | "secondary";
+        }>;
+      }
+  >;
 };
 
 type ShellToast = {
@@ -63,7 +76,6 @@ export function DebuggerShell() {
 
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const shellModalRef = useRef<HTMLElement | null>(null);
-  const shellModalTextRef = useRef<HTMLElement | null>(null);
   const suppressShellModalHideEventRef = useRef(false);
   const toastSequenceRef = useRef(0);
   const toastTimeoutsRef = useRef(new Map<number, number>());
@@ -71,18 +83,43 @@ export function DebuggerShell() {
   const currentModal = useMemo(() => {
     const activeModals =
       Array.isArray(state.activeModals) ? state.activeModals : [];
-    if (activeModals.length === 0) return { id: "", heading: "" };
+    if (activeModals.length === 0) {
+      return {
+        id: "",
+        heading: "",
+        content: undefined as unknown,
+        actions: [],
+      };
+    }
 
     const firstModal = activeModals[0];
     if (typeof firstModal === "string") {
-      return { id: firstModal, heading: "" };
+      return {
+        id: firstModal,
+        heading: "",
+        content: undefined as unknown,
+        actions: [],
+      };
     }
 
     return {
       id: firstModal?.id || "",
       heading: firstModal?.heading || "",
+      content: firstModal?.content ?? firstModal?.body,
+      actions: Array.isArray(firstModal?.actions) ? firstModal.actions : [],
     };
   }, [state.activeModals]);
+
+  const currentModalContentText = useMemo(() => {
+    if (currentModal.content === undefined) return "";
+    if (typeof currentModal.content === "string") return currentModal.content;
+
+    try {
+      return JSON.stringify(currentModal.content, null, 2);
+    } catch {
+      return String(currentModal.content);
+    }
+  }, [currentModal.content]);
 
   function push(type: string, payload?: unknown) {
     setEvents((previousEvents) =>
@@ -204,13 +241,11 @@ export function DebuggerShell() {
 
   useEffect(() => {
     const shellModal = shellModalRef.current;
-    const shellModalText = shellModalTextRef.current;
-    if (!shellModal || !shellModalText) return;
+    if (!shellModal) return;
 
     const isOpen = Boolean(currentModal.id);
 
     if (!isOpen) {
-      shellModalText.textContent = "No active modal.";
       shellModal.removeAttribute("heading");
       if (typeof (shellModal as any).hideOverlay === "function") {
         suppressShellModalHideEventRef.current = true;
@@ -222,12 +257,8 @@ export function DebuggerShell() {
       return;
     }
 
-    const displayHeading = currentModal.heading || currentModal.id;
+    const displayHeading = currentModal.heading || currentModal.id || "Modal";
     shellModal.setAttribute("heading", displayHeading);
-    shellModalText.textContent =
-      displayHeading ?
-        `App Bridge modal: ${displayHeading}`
-      : "App Bridge modal is open in debugger shell.";
 
     if (typeof (shellModal as any).showOverlay === "function") {
       (shellModal as any).showOverlay();
@@ -282,9 +313,20 @@ export function DebuggerShell() {
             type="button"
             variant="secondary"
             onClick={() => {
-              frameRef.current?.contentWindow?.location.reload();
+              const baseUrl = iframeUrl || appUrl || "/";
+              let nextUrl = baseUrl;
+
+              try {
+                const parsed = new URL(baseUrl, window.location.href);
+                parsed.searchParams.set("__sd_refresh", String(Date.now()));
+                nextUrl = parsed.toString();
+              } catch {
+                nextUrl = `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}__sd_refresh=${Date.now()}`;
+              }
+
+              setIframeUrl(nextUrl);
               setReady(false);
-              push("frame.refresh");
+              push("frame.refresh", { url: nextUrl });
             }}
           >
             Refresh
@@ -450,23 +492,38 @@ export function DebuggerShell() {
         size="base"
         ref={shellModalRef as unknown as React.RefObject<any>}
       >
-        <s-text
-          id="shell-modal-text"
-          ref={shellModalTextRef as unknown as React.RefObject<any>}
-        >
-          No active modal.
-        </s-text>
-        <s-button
-          slot="secondary-actions"
-          variant="secondary"
-          disabled={!currentModal.id}
-          onClick={() => {
-            if (!currentModal.id) return;
-            send("hideModal", currentModal.id);
-          }}
-        >
-          Close modal
-        </s-button>
+        {currentModalContentText ?
+          currentModalContentText
+        : <p className="text-sm text-zinc-500">No modal body content.</p>}
+
+        {currentModal.actions.length > 0 ?
+          <div className="mt-3 flex flex-wrap gap-2">
+            {currentModal.actions.map((action, index) => {
+              const actionIndex =
+                typeof action.actionIndex === "number" ?
+                  action.actionIndex
+                : index;
+              const label = action.label || `Action ${index + 1}`;
+              const variant =
+                action.variant === "primary" ? "primary" : "secondary";
+
+              return (
+                <s-button
+                  key={`${currentModal.id}-${actionIndex}-${label}`}
+                  variant={variant}
+                  onClick={() => {
+                    send("triggerModalAction", {
+                      id: currentModal.id,
+                      actionIndex,
+                    });
+                  }}
+                >
+                  {label}
+                </s-button>
+              );
+            })}
+          </div>
+        : null}
       </s-modal>
 
       <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex max-w-sm flex-col gap-2">
