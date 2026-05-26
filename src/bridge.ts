@@ -235,7 +235,7 @@ export function createShopifyDebuggerBridge() {
       hide(arg: string | { id: string }) {
         let id = typeof arg === "string" ? arg : arg.id;
         // Collect all modals to remove (avoid mutating during iteration)
-        const toRemove = [];
+        const toRemove: Array<string | { id: string; heading?: string }> = [];
         state.activeModals.forEach((m) => {
           if (
             (typeof m === "string" && m === id) ||
@@ -313,6 +313,14 @@ export function createShopifyDebuggerBridge() {
       hide() {
         state.loading = false;
         emit("loading.hide");
+      },
+      start() {
+        state.loading = true;
+        emit("loading.start");
+      },
+      stop() {
+        state.loading = false;
+        emit("loading.stop");
       },
     },
 

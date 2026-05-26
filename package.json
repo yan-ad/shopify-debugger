@@ -58,14 +58,21 @@
     "react": ">=18.0.0"
   },
   "devDependencies": {
+    "@shopify/polaris-types": "^1.0.7",
     "@types/node": "^25.9.1",
-    "@types/react": "^18.2.37",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "changelogen": "^0.6.2",
     "path": "^0.12.7",
+    "react-dom": "^19.2.6",
     "typescript": "^6.0.3",
     "unplugin-dts": "^1.0.1",
     "url": "^0.11.4",
     "vite": "^8.0.8"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "tailwindcss": "^4.3.0"
   }
 }

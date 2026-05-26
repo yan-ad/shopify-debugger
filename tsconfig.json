@@ -13,7 +13,7 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "types": ["node", "react"]
+    "types": ["node", "react", "@shopify/polaris-types"]
   },
   "include": ["src"]
 }

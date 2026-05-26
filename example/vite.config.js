@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { shopifyDebugger } from "shopify-debugger/vite";
+import { shopifyDebugger } from "../src/vite";
 
 export default defineConfig({
   plugins: [

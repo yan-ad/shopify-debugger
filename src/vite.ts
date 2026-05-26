@@ -1,4 +1,6 @@
 import type { AliasOptions, Plugin } from "vite";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { renderDebuggerPage } from "./debugger-page";
 
 export type ShopifyDebuggerViteOptions = {
@@ -38,30 +40,122 @@ function normalizeRoute(route: boolean | string | undefined) {
   return "/_debugger";
 }
 
+function resolveAppBridgeShimPath() {
+  const candidates = [
+    fileURLToPath(new URL("./app-bridge-react.ts", import.meta.url)),
+    fileURLToPath(new URL("./app-bridge-react.js", import.meta.url)),
+    fileURLToPath(new URL("./app-bridge-react.mjs", import.meta.url)),
+    fileURLToPath(new URL("../src/app-bridge-react.ts", import.meta.url)),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
+function resolveDebuggerShellEntryPath() {
+  const candidates = [
+    fileURLToPath(new URL("./debugger-shell.tsx", import.meta.url)),
+    fileURLToPath(new URL("../src/debugger-shell.tsx", import.meta.url)),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (char) => {
+    switch (char) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "'":
+        return "&#39;";
+      case '"':
+        return "&quot;";
+      default:
+        return char;
+    }
+  });
+}
+
+function renderReactDebuggerPage(options: {
+  title?: string;
+  appUrl?: string;
+  shellEntryPath: string;
+}) {
+  const title = options.title ?? "Shopify Debugger";
+  const appUrl = options.appUrl ?? "/";
+  const escapedTitle = escapeHtml(title);
+  const shellEntryPath = options.shellEntryPath.replace(/\\/g, "/");
+  const shellEntryUrl = `/@fs${encodeURI(shellEntryPath)}`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="shopify-api-key" content="SHOPIFY_API_KEY" />
+  <title>${escapedTitle}</title>
+  <script type="module" src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    window.__SHOPIFY_DEBUGGER_INITIAL_APP_URL = ${JSON.stringify(appUrl)};
+  </script>
+  <script type="module" src="${shellEntryUrl}"></script>
+</body>
+</html>`;
+}
+
 export function shopifyDebugger(
   options: ShopifyDebuggerViteOptions = {},
 ): Plugin {
   const enabled = options.enabled ?? envEnabled();
   const aliasAppBridgeReact = options.aliasAppBridgeReact ?? true;
   const debuggerRoute = normalizeRoute(options.debuggerRoute);
-  const shimPath = "shopify-debugger/app-bridge-react";
+  const shimPath =
+    resolveAppBridgeShimPath() || "shopify-debugger/app-bridge-react";
 
   return {
     name: "shopify-debugger",
     enforce: "pre",
     config(config) {
-      if (!enabled || !aliasAppBridgeReact) return;
+      if (!enabled) return;
 
-      return {
-        resolve: {
+      const result: Record<string, unknown> = {};
+
+      if (debuggerRoute) {
+        result.plugins = [tailwindcss()];
+      }
+
+      if (aliasAppBridgeReact) {
+        result.resolve = {
           alias: [
             { find: "@shopify/app-bridge-react", replacement: shimPath },
             ...normalizeAlias(config.resolve?.alias),
           ],
-        },
-      };
+        };
+      }
+
+      return result as import("vite").UserConfig;
     },
     configureServer(server) {
+      const shellEntryPath = resolveDebuggerShellEntryPath();
+
       if (enabled && debuggerRoute) {
         const logger = server.config.logger;
         const originalInfo = logger.info.bind(logger);
@@ -87,7 +181,7 @@ export function shopifyDebugger(
 
       if (!enabled || !debuggerRoute) return;
 
-      server.middlewares.use((request, response, next) => {
+      server.middlewares.use(async (request, response, next) => {
         const requestUrl = request.url?.split("?")[0];
         const normalizedUrl =
           requestUrl?.endsWith("/") && requestUrl !== "/" ?
@@ -98,15 +192,30 @@ export function shopifyDebugger(
           next();
           return;
         }
+        try {
+          const html =
+            shellEntryPath ?
+              renderReactDebuggerPage({
+                appUrl: options.appUrl ?? "/",
+                title: options.title,
+                shellEntryPath,
+              })
+            : renderDebuggerPage({
+                appUrl: options.appUrl ?? "/",
+                title: options.title,
+              });
 
-        response.statusCode = 200;
-        response.setHeader("Content-Type", "text/html; charset=utf-8");
-        response.end(
-          renderDebuggerPage({
-            appUrl: options.appUrl ?? "/",
-            title: options.title,
-          }),
-        );
+          const transformed = await server.transformIndexHtml(
+            request.url || debuggerRoute,
+            html,
+          );
+
+          response.statusCode = 200;
+          response.setHeader("Content-Type", "text/html; charset=utf-8");
+          response.end(transformed);
+        } catch (error) {
+          next(error as Error);
+        }
       });
     },
   };
