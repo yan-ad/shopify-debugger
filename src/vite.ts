@@ -62,6 +62,29 @@ export function shopifyDebugger(
       };
     },
     configureServer(server) {
+      if (enabled && debuggerRoute) {
+        const logger = server.config.logger;
+        const originalInfo = logger.info.bind(logger);
+        let debugUrlLogged = false;
+
+        logger.info = (message, options) => {
+          if (
+            !debugUrlLogged &&
+            typeof message === "string" &&
+            message.includes("press h + enter to show help")
+          ) {
+            const localUrl = server.resolvedUrls?.local[0];
+            if (localUrl) {
+              const debugUrl = new URL(debuggerRoute, localUrl).toString();
+              originalInfo(`  ➜  Debug:   ${debugUrl}`, options);
+              debugUrlLogged = true;
+            }
+          }
+
+          return originalInfo(message, options);
+        };
+      }
+
       if (!enabled || !debuggerRoute) return;
 
       server.middlewares.use((request, response, next) => {

@@ -75,19 +75,19 @@ This package uses [changelogen](https://github.com/unjs/changelogen) for changel
 Dry-run release notes:
 
 ```bash
-bun run release:dry
+pnpm run release:dry
 ```
 
 Build, update changelog, tag, and push:
 
 ```bash
-bun run release
+pnpm run release
 ```
 
 Build, update changelog, tag, push, and publish to npm:
 
 ```bash
-bun run release:publish
+pnpm run release:publish
 ```
 
 ## Example
@@ -96,8 +96,8 @@ This repo includes a runnable example app:
 
 ```bash
 cd example
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
 Then open:

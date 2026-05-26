@@ -44,15 +44,15 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "bun run clean && bun run build:js && bun run build:types && bun run copy:css",
+    "build": "pnpm run clean && pnpm run build:js && pnpm run build:types && pnpm run copy:css",
     "build:js": "vite build",
     "build:types": "tsc --emitDeclarationOnly",
     "check": "tsc --noEmit",
     "clean": "rm -rf dist",
     "copy:css": "cp src/style.css dist/style.css",
-    "release": "bun run check && bun run build && changelogen --release --push",
+    "release": "pnpm run check && pnpm run build && changelogen --release --push",
     "release:dry": "changelogen --dry",
-    "release:publish": "bun run check && bun run build && changelogen --release --push --publish"
+    "release:publish": "pnpm run check && pnpm run build && changelogen --release --push --publish"
   },
   "peerDependencies": {
     "react": ">=18.0.0"
@@ -60,12 +60,12 @@
   "devDependencies": {
     "@types/node": "^25.9.1",
     "@types/react": "^18.2.37",
+    "@vitejs/plugin-react": "^6.0.2",
     "changelogen": "^0.6.2",
     "path": "^0.12.7",
     "typescript": "^6.0.3",
     "unplugin-dts": "^1.0.1",
     "url": "^0.11.4",
-    "vite": "^^8.0.8"
-  },
-  "dependencies": {}
+    "vite": "^8.0.8"
+  }
 }

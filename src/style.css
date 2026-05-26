@@ -2,10 +2,10 @@
   --sd-bg: #ffffff;
   --sd-fg: #111827;
   --sd-muted: #6b7280;
-  --sd-border: #d1d5db;
-  --sd-subtle: #f3f4f6;
-  --sd-primary: #303030;
-  --sd-shadow: 0 18px 60px rgba(15, 23, 42, 0.22);
+  --sd-border: #d8dde3;
+  --sd-subtle: #f7f8fa;
+  --sd-primary: #1f2937;
+  --sd-shadow: 0 18px 56px rgba(15, 23, 42, 0.14);
 }
 
 .sd-panel {
@@ -13,14 +13,34 @@
   z-index: 2147483647;
   width: min(430px, calc(100vw - 24px));
   color: var(--sd-fg);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Manrope,
+    "Avenir Next",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   font-size: 13px;
 }
 
-.sd-panel--bottom-right { right: 16px; bottom: 16px; }
-.sd-panel--bottom-left { left: 16px; bottom: 16px; }
-.sd-panel--top-right { right: 16px; top: 16px; }
-.sd-panel--top-left { left: 16px; top: 16px; }
+.sd-panel--bottom-right {
+  right: 16px;
+  bottom: 16px;
+}
+.sd-panel--bottom-left {
+  left: 16px;
+  bottom: 16px;
+}
+.sd-panel--top-right {
+  right: 16px;
+  top: 16px;
+}
+.sd-panel--top-left {
+  left: 16px;
+  top: 16px;
+}
 
 .sd-panel__tab {
   display: flex;
@@ -28,10 +48,10 @@
   align-items: center;
   margin-left: auto;
   border: 1px solid var(--sd-border);
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--sd-primary);
   color: #fff;
-  padding: 8px 12px;
+  padding: 9px 12px;
   box-shadow: var(--sd-shadow);
   cursor: pointer;
 }
@@ -59,7 +79,7 @@
   margin-top: 8px;
   overflow: hidden;
   border: 1px solid var(--sd-border);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--sd-bg);
   box-shadow: var(--sd-shadow);
 }
@@ -92,9 +112,9 @@
 .sd-panel__header button,
 .sd-panel__actions button {
   border: 1px solid var(--sd-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
-  padding: 6px 9px;
+  padding: 7px 10px;
   cursor: pointer;
 }
 
@@ -114,15 +134,15 @@
 .sd-panel__section select {
   width: 100%;
   border: 1px solid var(--sd-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
-  padding: 7px 9px;
+  padding: 8px 10px;
 }
 
 .sd-panel__pending,
 .sd-panel__status,
 .sd-panel__toast {
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--sd-subtle);
   padding: 10px;
 }
@@ -147,8 +167,8 @@
 
 .sd-event {
   border: 1px solid var(--sd-border);
-  border-radius: 10px;
-  background: #fff;
+  border-radius: 12px;
+  background: var(--sd-subtle);
   padding: 10px;
 }
 
@@ -169,7 +189,7 @@
   margin: 8px 0 0;
   border-radius: 8px;
   background: #111827;
-  color: #d1fae5;
+  color: #e5e7eb;
   padding: 8px;
   font-size: 11px;
   line-height: 1.45;

@@ -15,17 +15,19 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapedTitle}</title>
+  <script type="module" src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f6f7;
+      --bg: radial-gradient(1200px 600px at -10% -10%, #f8fafc 0%, #f3f4f6 48%, #eceff3 100%);
       --panel: #ffffff;
-      --border: #d1d5db;
-      --text: #1f2937;
+      --border: #d8dde3;
+      --text: #111827;
       --muted: #6b7280;
-      --primary: #303030;
-      --subtle: #f3f4f6;
-      --shadow: 0 24px 80px rgba(15, 23, 42, 0.16);
+      --primary: #1f2937;
+      --subtle: #f7f8fa;
+      --surface: #f1f5f9;
+      --shadow: 0 18px 56px rgba(15, 23, 42, 0.14);
     }
 
     * { box-sizing: border-box; }
@@ -35,7 +37,7 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       min-height: 100vh;
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Manrope, "Avenir Next", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     header {
@@ -43,10 +45,11 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      height: 58px;
-      padding: 0 18px;
+      min-height: 68px;
+      padding: 10px 18px;
       border-bottom: 1px solid var(--border);
-      background: var(--panel);
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(8px);
     }
 
     header strong { display: block; font-size: 14px; }
@@ -56,15 +59,16 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
 
     button, input, select, textarea {
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       background: #fff;
       color: var(--text);
       font: inherit;
-      padding: 8px 10px;
+      padding: 9px 11px;
     }
 
     button { cursor: pointer; }
     button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button:hover { border-color: #b8c0cc; }
     input { width: min(520px, 46vw); }
     select, textarea { width: 100%; }
     textarea { min-height: 128px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
@@ -72,15 +76,15 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
     main {
       display: grid;
       grid-template-columns: 1fr 390px;
-      gap: 14px;
+      gap: 16px;
       height: calc(100vh - 58px);
-      padding: 14px;
+      padding: 16px;
     }
 
     .frame-card, aside {
       overflow: hidden;
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 14px;
       background: var(--panel);
       box-shadow: var(--shadow);
     }
@@ -120,7 +124,7 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
     .controls {
       display: grid;
       gap: 12px;
-      background: #fafafa;
+      background: var(--subtle);
     }
 
     .control-row { display: grid; gap: 6px; }
@@ -132,7 +136,7 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       width: fit-content;
       align-items: center;
       border-radius: 999px;
-      background: var(--subtle);
+      background: var(--surface);
       color: var(--muted);
       padding: 4px 8px;
       font-size: 12px;
@@ -150,9 +154,9 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
 
     .event {
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 10px;
-      background: #fff;
+      background: var(--subtle);
     }
 
     .event + .event { margin-top: 8px; }
@@ -172,7 +176,7 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       margin: 8px 0 0;
       border-radius: 8px;
       background: #111827;
-      color: #d1fae5;
+      color: #e5e7eb;
       padding: 8px;
       font-size: 11px;
       line-height: 1.45;
@@ -243,6 +247,12 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       </div>
     </aside>
   </main>
+    <s-modal id="shell-modal" size="base">
+      <s-text id="shell-modal-text">No active modal.</s-text>
+      <s-button slot="secondary-actions" id="shell-modal-close" variant="secondary">
+        Close modal
+      </s-button>
+    </s-modal>
   <script type="module">
     const frame = document.getElementById('debugger-frame')
     const input = document.getElementById('debugger-url')
@@ -258,8 +268,58 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
     const cancelPicker = document.getElementById('resource-cancel')
     const errorPicker = document.getElementById('resource-error')
     const clearEvents = document.getElementById('events-clear')
+    const shellModal = document.getElementById('shell-modal')
+    const shellModalText = document.getElementById('shell-modal-text')
+    const shellModalClose = document.getElementById('shell-modal-close')
     const events = []
     let latestState
+    let currentShellModalId = ''
+    let currentShellModalHeading = ''
+    let suppressShellModalHideEvent = false
+
+    function renderShellModal(state) {
+      const activeModals = Array.isArray(state?.activeModals) ? state.activeModals : []
+      // Support modal metadata: [{id, heading}] or [id]
+      let currentModalId = ''
+      let heading = ''
+      if (activeModals.length > 0) {
+        const modal = activeModals[0]
+        if (typeof modal === 'object' && modal !== null) {
+          currentModalId = modal.id || ''
+          heading = modal.heading || ''
+        } else {
+          currentModalId = modal
+        }
+      }
+      const isOpen = Boolean(currentModalId)
+
+      currentShellModalId = currentModalId
+      currentShellModalHeading = heading
+      shellModalClose.disabled = !isOpen
+
+      if (!isOpen) {
+        shellModalText.textContent = 'No active modal.'
+        shellModal.removeAttribute('heading')
+        if (typeof shellModal.hideOverlay === 'function') {
+          suppressShellModalHideEvent = true
+          shellModal.hideOverlay()
+          queueMicrotask(() => {
+            suppressShellModalHideEvent = false
+          })
+        }
+        return
+      }
+
+      // Prefer heading from app, fallback to modal id
+      const displayHeading = heading || currentModalId
+      shellModal.setAttribute('heading', displayHeading)
+      shellModalText.textContent = displayHeading
+        ? 'App Bridge modal: ' + displayHeading
+        : 'App Bridge modal is open in debugger shell.'
+      if (typeof shellModal.showOverlay === 'function') {
+        shellModal.showOverlay()
+      }
+    }
 
     function send(command, payload) {
       frame.contentWindow?.postMessage({ source: 'shopify-debugger-shell', command, payload }, '*')
@@ -288,6 +348,7 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       const hasPending = Boolean(state.pendingResourcePicker)
       pending.textContent = hasPending ? 'resource picker pending' : 'no pending picker'
       pending.dataset.pending = String(hasPending)
+      renderShellModal(state)
     }
 
     function push(type, payload) {
@@ -358,6 +419,17 @@ export function renderDebuggerPage(options: DebuggerPageOptions = {}) {
       events.length = 0
       renderEvents()
       send('clearEvents')
+    })
+
+    shellModalClose.addEventListener('click', () => {
+      if (!currentShellModalId) return
+      send('hideModal', currentShellModalId)
+    })
+
+    shellModal.addEventListener('hide', () => {
+      if (suppressShellModalHideEvent) return
+      if (!currentShellModalId) return
+      send('hideModal', currentShellModalId)
     })
 
     window.addEventListener('message', (event) => {

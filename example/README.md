@@ -28,8 +28,8 @@ export default defineConfig({
 From this folder:
 
 ```bash
-bun install
-bun run dev
+pnpm install
+pnpm run dev
 ```
 
 Then open:

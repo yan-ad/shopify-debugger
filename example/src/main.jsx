@@ -48,15 +48,39 @@ function App() {
         <div className="actions">
           <button
             type="button"
-            onClick={() => shopify.modal.show("example-modal")}
+            onClick={() => {
+              shopify.modal.show({
+                id: "example-modal",
+                heading: "Example modal",
+              });
+            }}
           >
-            Show modal
+            Show Modal
           </button>
           <button
             type="button"
-            onClick={() => shopify.toast.show("Hello from App Bridge toast")}
+            onClick={() => {
+              shopify.toast.show("This is a simulated toast message.");
+            }}
           >
-            Show toast
+            Show Toast
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              shopify.toast.show("This is a simulated toast message.");
+            }}
+          >
+            Simulate Toast
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              shopify.loading.start();
+              setTimeout(() => shopify.loading.stop(), 2000);
+            }}
+          >
+            Simulate Loading
           </button>
           <button type="button" onClick={pickProduct}>
             Pick product
@@ -78,6 +102,60 @@ function App() {
             onClick={() => shopify.saveBar.hide("example-save-bar")}
           >
             Save bar hide
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/perform-action", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ action: "example" }),
+                });
+
+                if (!response.ok) {
+                  throw new Error(`API error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                shopify.modal.show({
+                  id: "example-modal",
+                  heading: "Action Result",
+                  content: JSON.stringify(result, null, 2),
+                });
+              } catch (error) {
+                shopify.toast.show(
+                  `Action failed: ${error instanceof Error ? error.message : error}`,
+                );
+              }
+            }}
+          >
+            Perform Action
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/perform-action", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ action: "debugger-action" }),
+                });
+
+                if (!response.ok) {
+                  throw new Error(`API error: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                shopify.toast.show(`Action performed: ${result.message}`);
+              } catch (error) {
+                shopify.toast.show(
+                  `Action failed: ${error instanceof Error ? error.message : error}`,
+                );
+              }
+            }}
+          >
+            Perform Action Debugger
           </button>
         </div>
       </section>
