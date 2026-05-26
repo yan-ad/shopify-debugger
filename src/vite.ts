@@ -1,5 +1,3 @@
-import path from "path";
-import { fileURLToPath } from "url";
 import type { AliasOptions, Plugin } from "vite";
 import { renderDebuggerPage } from "./debugger-page";
 
@@ -46,8 +44,7 @@ export function shopifyDebugger(
   const enabled = options.enabled ?? envEnabled();
   const aliasAppBridgeReact = options.aliasAppBridgeReact ?? true;
   const debuggerRoute = normalizeRoute(options.debuggerRoute);
-  const debuggerRoot = path.dirname(fileURLToPath(import.meta.url));
-  const shimPath = path.resolve(debuggerRoot, "app-bridge-react.js");
+  const shimPath = "shopify-debugger/app-bridge-react";
 
   return {
     name: "shopify-debugger",
